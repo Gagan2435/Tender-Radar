@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Tender Radar</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;margin:0;background:#f4f6fa;color:#1c2333}
+header{background:#1c2b4a;color:#fff;padding:14px 28px}header small{opacity:.8}
+main{padding:20px 28px;max-width:1200px;margin:auto}
+form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+input,select,button{padding:7px 10px;border:1px solid #c5cbd8;border-radius:6px;font-size:14px}
+button{background:#3b6fd4;color:#fff;border:0;cursor:pointer}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin-bottom:18px}
+.charts img{width:100%;background:#fff;border-radius:8px;border:1px solid #dde2ec}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;font-size:14px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #eef0f5;vertical-align:top}th{background:#eaeef7}
+.tag{background:#e3ebff;border-radius:10px;padding:2px 8px;font-size:12px}.pager{margin:14px 0}
+</style></head><body>
+<header><b>Tender Radar</b> <small>&middot; public procurement analytics &middot; {{ total }} tenders stored &middot;
+<a style="color:#9cc0ff" href="{% url 'api_tenders' %}?{{ params }}">JSON API</a></small></header>
+<main>
+{% if total == 0 %}<p>No data yet. Run <code>python manage.py crawl</code>.</p>{% else %}
+<form method="get">
+  <input name="q" placeholder="Search title or buyer" value="{{ q }}">
+  <select name="sector"><option value="">All sectors</option>{% for s in sectors %}<option {% if s == sel.sector %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+  <select name="country"><option value="">All countries</option>{% for c in countries %}<option {% if c == sel.country %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  <select name="nature"><option value="">All types</option>{% for n in natures %}<option {% if n == sel.nature %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <button>Filter</button> <a href="{% url 'dashboard' %}" style="align-self:center">reset</a>
+</form>
+<div class="charts">
+  <img alt="by sector" src="{% url 'chart_sector' %}?{{ params }}">
+  <img alt="by country" src="{% url 'chart_country' %}?{{ params }}">
+  <img alt="per day" src="{% url 'chart_daily' %}?{{ params }}">
+</div>
+<p>{{ shown }} matching tenders</p>
+<table><tr><th>Published</th><th>Title</th><th>Buyer</th><th>Country</th><th>Sector</th><th>Deadline</th></tr>
+{% for t in page %}<tr>
+  <td>{{ t.published|date:"Y-m-d" }}</td>
+  <td>{% if t.url %}<a href="{{ t.url }}" target="_blank" rel="noopener">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}
+      {% if t.source == "sample" %}<span class="tag">synthetic</span>{% endif %}</td>
+  <td>{{ t.buyer }}</td><td>{{ t.country }}</td>
+  <td><span class="tag">{{ t.sector }}{% if t.sector_source == "model" %} (predicted){% endif %}</span></td>
+  <td>{{ t.deadline|date:"Y-m-d" }}</td></tr>{% endfor %}
+</table>
+<div class="pager">
+  {% if page.has_previous %}<a href="?{{ params }}&page={{ page.previous_page_number }}">&larr; prev</a>{% endif %}
+  page {{ page.number }} of {{ page.paginator.num_pages }}
+  {% if page.has_next %}<a href="?{{ params }}&page={{ page.next_page_number }}">next &rarr;</a>{% endif %}
+</div>
+{% endif %}
+</main></body></html>
